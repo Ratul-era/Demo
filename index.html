@@ -15,26 +15,45 @@
   }
   .yt-box { background:#000; border-radius:12px; overflow:hidden; aspect-ratio:16/9; }
   .yt-box iframe { width:100%; height:100%; border:0; }
+  .yt-title { font-size:14px; margin:8px 0 0 0; font-weight:bold; }
   @media (max-width:768px) { #youtube-row { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
-<div id="youtube-row">
-  <div class="yt-box">
-    <iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ&index=1" 
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-      allowfullscreen loading="lazy"></iframe>
-  </div>
-  <div class="yt-box">
-    <iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ&index=2" 
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-      allowfullscreen loading="lazy"></iframe>
-  </div>
-  <div class="yt-box">
-    <iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ&index=3" 
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-      allowfullscreen loading="lazy"></iframe>
-  </div>
-</div>
+
+<div id="youtube-row">Loading latest videos...</div>
+
+<script>
+const channelId = "UCpnU9f5UwOw8Jfa9iEKlqBQ";
+const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+
+// This works on GitHub Pages because origin is https://, not null
+const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+
+fetch(apiUrl)
+  .then(res => res.json())
+  .then(data => {
+    const container = document.getElementById("youtube-row");
+    const videos = data.items.slice(0, 3);
+    
+    container.innerHTML = videos.map(v => {
+      const videoId = v.link.split("v=")[1];
+      return `
+        <div>
+          <div class="yt-box">
+            <iframe src="https://www.youtube.com/embed/${videoId}?rel=0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen loading="lazy"></iframe>
+          </div>
+          <p class="yt-title">${v.title}</p>
+        </div>`;
+    }).join("");
+  })
+  .catch(err => {
+    document.getElementById("youtube-row").innerText = "Could not load videos.";
+    console.error(err);
+  });
+</script>
+
 </body>
-      </html>
+</html>
