@@ -18,51 +18,38 @@
 
 <script>
 const channelId = "UCpnU9f5UwOw8Jfa9iEKlqBQ";
-const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
 
-async function getVideos() {
-  // Try AllOrigins (most stable for GitHub Pages)
+async function loadLatest() {
   try {
-    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`);
+    // Free YouTube API with CORS - works on GitHub Pages
+    const url = `https://yt.lemnoslife.com/noKey/search?channelId=${channelId}&part=snippet&order=date&type=video`;
+    const res = await fetch(url);
     const data = await res.json();
-    const xml = data.contents;
     
-    // Parse XML
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xml, "text/xml");
-    const entries = xmlDoc.querySelectorAll("entry");
+    const videos = data.items.slice(0, 3);
     
-    return Array.from(entries).slice(0,3).map(entry => {
-      const link = entry.querySelector("link").getAttribute("href");
-      const videoId = link.split("v=")[1];
-      const title = entry.querySelector("title").textContent;
-      return { videoId, title };
-    });
-  } catch(e) {
-    console.error("AllOrigins failed", e);
-    throw e;
+    document.getElementById("youtube-row").innerHTML = videos.map(v => {
+      const videoId = v.id.videoId;
+      return `
+        <div class="yt-box">
+          <iframe src="https://www.youtube.com/embed/${videoId}?rel=0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen loading="lazy"></iframe>
+        </div>`;
+    }).join("");
+    
+  } catch (e) {
+    console.error(e);
+    document.getElementById("youtube-row").innerHTML = `
+      <p>Auto-fetch blocked. Trying fallback...</p>
+      <div class="yt-box"><iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ&index=1" allowfullscreen></iframe></div>
+      <div class="yt-box"><iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ&index=2" allowfullscreen></iframe></div>
+      <div class="yt-box"><iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ&index=3" allowfullscreen></iframe></div>
+    `;
   }
 }
 
-getVideos().then(videos => {
-  const container = document.getElementById("youtube-row");
-  container.innerHTML = videos.map(v => `
-    <div class="yt-box">
-      <iframe src="https://www.youtube.com/embed/${v.videoId}?rel=0" 
-        title="${v.title}"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-        allowfullscreen loading="lazy"></iframe>
-    </div>
-  `).join("");
-}).catch(() => {
-  document.getElementById("youtube-row").innerHTML = "Could not load automatically. Using fallback.";
-  // Fallback - shows playlist, at least it plays
-  document.getElementById("youtube-row").innerHTML = `
-    <div class="yt-box"><iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ" allowfullscreen></iframe></div>
-    <div class="yt-box"><iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ" allowfullscreen></iframe></div>
-    <div class="yt-box"><iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ" allowfullscreen></iframe></div>
-  `;
-});
+loadLatest();
 </script>
 
 </body>
