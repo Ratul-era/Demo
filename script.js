@@ -2263,7 +2263,7 @@ const { useState, useEffect, useRef, useMemo, useCallback } = React;
              aria-label="Email Heaven Studio" 
             > 
               <span className="text-lg" 
-              aria-hidden="true">📨</span> 
+              aria-hidden="true">✉️</span> 
               <span className="text-[0.68rem] font-semibold tracking-[0.14em]">EMAIL</span> 
             </a>
       
