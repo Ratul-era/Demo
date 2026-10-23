@@ -6,16 +6,9 @@
 <title>Heaven Architects</title>
 <style>
   body { margin:0; font-family: Arial, sans-serif; padding:40px 20px; }
-  #youtube-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
+  #youtube-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1200px; margin: 0 auto; }
   .yt-box { background:#000; border-radius:12px; overflow:hidden; aspect-ratio:16/9; }
   .yt-box iframe { width:100%; height:100%; border:0; }
-  .yt-title { font-size:14px; margin:8px 0 0 0; font-weight:bold; }
   @media (max-width:768px) { #youtube-row { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -25,34 +18,51 @@
 
 <script>
 const channelId = "UCpnU9f5UwOw8Jfa9iEKlqBQ";
-const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
 
-// This works on GitHub Pages because origin is https://, not null
-const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
-
-fetch(apiUrl)
-  .then(res => res.json())
-  .then(data => {
-    const container = document.getElementById("youtube-row");
-    const videos = data.items.slice(0, 3);
+async function getVideos() {
+  // Try AllOrigins (most stable for GitHub Pages)
+  try {
+    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`);
+    const data = await res.json();
+    const xml = data.contents;
     
-    container.innerHTML = videos.map(v => {
-      const videoId = v.link.split("v=")[1];
-      return `
-        <div>
-          <div class="yt-box">
-            <iframe src="https://www.youtube.com/embed/${videoId}?rel=0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-              allowfullscreen loading="lazy"></iframe>
-          </div>
-          <p class="yt-title">${v.title}</p>
-        </div>`;
-    }).join("");
-  })
-  .catch(err => {
-    document.getElementById("youtube-row").innerText = "Could not load videos.";
-    console.error(err);
-  });
+    // Parse XML
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xml, "text/xml");
+    const entries = xmlDoc.querySelectorAll("entry");
+    
+    return Array.from(entries).slice(0,3).map(entry => {
+      const link = entry.querySelector("link").getAttribute("href");
+      const videoId = link.split("v=")[1];
+      const title = entry.querySelector("title").textContent;
+      return { videoId, title };
+    });
+  } catch(e) {
+    console.error("AllOrigins failed", e);
+    throw e;
+  }
+}
+
+getVideos().then(videos => {
+  const container = document.getElementById("youtube-row");
+  container.innerHTML = videos.map(v => `
+    <div class="yt-box">
+      <iframe src="https://www.youtube.com/embed/${v.videoId}?rel=0" 
+        title="${v.title}"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        allowfullscreen loading="lazy"></iframe>
+    </div>
+  `).join("");
+}).catch(() => {
+  document.getElementById("youtube-row").innerHTML = "Could not load automatically. Using fallback.";
+  // Fallback - shows playlist, at least it plays
+  document.getElementById("youtube-row").innerHTML = `
+    <div class="yt-box"><iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ" allowfullscreen></iframe></div>
+    <div class="yt-box"><iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ" allowfullscreen></iframe></div>
+    <div class="yt-box"><iframe src="https://www.youtube.com/embed/videoseries?list=UUpnU9f5UwOw8Jfa9iEKlqBQ" allowfullscreen></iframe></div>
+  `;
+});
 </script>
 
 </body>
